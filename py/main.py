@@ -5,7 +5,7 @@ import altair as alt
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler, PolynomialFeatures
-from sklearn.metrics import confusion_matrix, roc_curve, auc, roc_auc_score
+from sklearn.metrics import confusion_matrix, roc_curve, auc, roc_auc_score, accuracy_score
 
 # Sidebar: Filtering Options
 st.sidebar.header("Info of Candidates")
@@ -13,12 +13,14 @@ st.sidebar.markdown("### Select the feature(s) you want to use for filtering!")
 
 specify = st.sidebar.selectbox("Features", ("All", "Specify"))
 
+gender_filter = []
+major_filter = []
+
 if specify == "Specify":
     st.sidebar.markdown("### Current status")
     if st.sidebar.checkbox("Gender", key="gender"):
         option = st.sidebar.selectbox("Select gender", ("All", "Specify"))
         if option == "Specify":
-            gender_filter = []
             if st.sidebar.checkbox("Female", key="female"):
                 gender_filter.append("Female")
             if st.sidebar.checkbox("Male", key="male"):
@@ -32,7 +34,6 @@ if specify == "Specify":
     if st.sidebar.checkbox("Major", key="major"):
         option = st.sidebar.selectbox("Select major", ("All", "Specify"))
         if option == "Specify":
-            major_filter = []
             if st.sidebar.checkbox("STEM", key="STEM"):
                 major_filter.append("STEM")
             if st.sidebar.checkbox("Humanities", key="Humanities"):
@@ -81,7 +82,10 @@ df_train = pd.DataFrame(
         "City Index": np.random.rand(100),
     }
 )
-st.write("Sample Dataset:", df_train.head())
+qualified_candidates = df_train.shape[0]
+st.write(f"Qualified candidate count: {qualified_candidates}")
+if st.checkbox("Show dataframe", key="filtered"):
+    st.write(df_train.head())
 
 # Model Training
 st.header("Model Training")
@@ -90,3 +94,20 @@ y = np.random.choice([0, 1], 100)
 model = LogisticRegression()
 model.fit(X, y)
 st.write("Model Trained Successfully!")
+
+# ROC Curve Plot
+y_scores = model.predict_proba(X)[:, 1]
+fpr, tpr, thresholds = roc_curve(y, y_scores)
+roc_auc = auc(fpr, tpr)
+
+fig, ax = plt.subplots()
+plt.plot(fpr, tpr, color='blue', lw=2, label=f'ROC curve (AUC = {roc_auc:.2f}')
+plt.plot([0, 1], [0, 1], color='grey', linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic')
+plt.legend(loc='lower right')
+st.pyplot(fig)
+
